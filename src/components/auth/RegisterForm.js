@@ -5,9 +5,13 @@ import AuthInput from "./AuthInput";
 import { useDispatch, useSelector } from "react-redux";
 import PulseLoader from "react-spinners/PulseLoader";
 import { Link, useNavigate } from "react-router-dom";
-import { registerUser } from "../../features/userSlice";
+import { changeStatus, registerUser } from "../../features/userSlice";
 import { useState } from "react";
 import Picture from "./Picture";
+import axios from "axios";
+
+const CLOUD_NAME = process.env.REACT_APP_CLOUD_NAME;
+const CLOUD_SECRET = process.env.REACT_APP_CLOUD_SECRET;
 
 const RegisterForm = () => {
   const dispatch = useDispatch();
@@ -24,17 +28,40 @@ const RegisterForm = () => {
     resolver: yupResolver(signUpSchema),
   });
   const onSubmit = async (data) => {
-    let res = await dispatch(registerUser({ ...data, picture: "" }));
-    if (res.payload.user) {
-      navigate("/");
+    dispatch(changeStatus("loading"));
+    if (picture) {
+      await uploadImage().then(async (response) => {
+        let res = await dispatch(
+          registerUser({ ...data, picture: response.secure_url })
+        );
+        if (res?.payload?.user) {
+          navigate("/");
+        }
+      });
+    } else {
+      let res = await dispatch(registerUser({ ...data, picture: "" }));
+      if (res?.payload?.user) {
+        navigate("/");
+      }
     }
+  };
+
+  const uploadImage = async () => {
+    let formData = new FormData();
+    formData.append("upload_preset", CLOUD_SECRET);
+    formData.append("file", picture);
+    const { data } = await axios.post(
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+      formData
+    );
+    return data;
   };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center  overflow-hidden  ">
       <div className="w-full max-w-md  p-10 dark:bg-dark_bg_2 rounded-lg ">
         <div className="text-center dark:text-dark_text_1">
-          <h2 className="w-full mt-6 text-3xl font-bold">Welcome</h2>
+          <h2 className=" mt-6 text-3xl font-bold">Welcome</h2>
           <p className="mt-2 text-sm">Sign up</p>
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-6">
