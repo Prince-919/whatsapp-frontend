@@ -1,10 +1,11 @@
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { signUpSchema } from "../../utils/validation";
+import { signInSchema } from "../../utils/validation";
 import AuthInput from "./AuthInput";
 import { useDispatch, useSelector } from "react-redux";
 import PulseLoader from "react-spinners/PulseLoader";
 import { Link, useNavigate } from "react-router-dom";
+import { loginUser } from "../../features/userSlice";
 
 const LoginForm = () => {
   const dispatch = useDispatch();
@@ -14,13 +15,17 @@ const LoginForm = () => {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm({
-    resolver: yupResolver(signUpSchema),
+    resolver: yupResolver(signInSchema),
   });
 
-  const onSubmit = async (values) => {};
+  const onSubmit = async (values) => {
+    let res = await dispatch(loginUser({ ...values }));
+    if (res?.payload?.user) {
+      navigate("/");
+    }
+  };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center  overflow-hidden  ">
@@ -54,7 +59,7 @@ const LoginForm = () => {
           <button
             className="w-full flex justify-center bg-green_1 text-gray-100 p-3 rounded-full tracking-wide font-semibold focus:outline-none hover:bg-green_2 shadow-lg cursor-pointer transition ease-in duration-300"
             type="submit">
-            {status == "loading" ? (
+            {status === "loading" ? (
               <PulseLoader color="#fff" size={16} />
             ) : (
               "Sign in"
